@@ -43,13 +43,13 @@ def create_app(
     secret_key = os.getenv("FLASK_SECRET_KEY", "codeloom-dev-secret-change-me")
     app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
-    # CORS for React dev server
+    # CORS — origins loaded from CORS_ORIGINS env var (comma-separated).
+    # Defaults to localhost dev ports when not set.
+    _cors_env = os.getenv("CORS_ORIGINS", "http://localhost:5034,http://localhost:5173")
+    cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://localhost:5173",
-        ],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -208,9 +208,17 @@ async def code_chat(
 
     # Retrieve relevant code chunks
     nodes = pipeline._get_cached_nodes(project_id)
+
+    if not nodes:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=422,
+            content={"detail": "No embeddings found for this project. Please re-upload the zip to generate embeddings."},
+        )
+
     retrieval_results = []
 
-    if nodes and pipeline._engine and pipeline._engine._retriever:
+    if pipeline._engine and pipeline._engine._retriever:
         retrieval_results = fast_retrieve(
             nodes=nodes,
             query=data.query,
@@ -472,9 +480,14 @@ async def code_chat_stream(
 
             # Retrieve relevant code chunks
             nodes = pipeline._get_cached_nodes(project_id)
+
+            if not nodes:
+                yield f"data: {json.dumps({'type': 'error', 'error': 'No embeddings found for this project. Please re-upload the zip to generate embeddings.'})}\n\n"
+                return
+
             retrieval_results = []
 
-            if nodes and pipeline._engine and pipeline._engine._retriever:
+            if pipeline._engine and pipeline._engine._retriever:
                 retrieval_results = fast_retrieve(
                     nodes=nodes,
                     query=data.query,

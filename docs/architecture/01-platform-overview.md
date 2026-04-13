@@ -18,7 +18,7 @@ CodeLoom is a code intelligence and migration platform that treats an entire cod
 
 ```
   ┌──────────────────────────────────────────────────────────────┐
-  │                   React SPA  (:3000)                         │
+  │                   React SPA  (:5034)                         │
   │                                                              │
   │   /login         /          /project/:id   /project/:id/chat │
   │   Login.tsx  Dashboard.tsx  ProjectView.tsx  CodeChatPage.tsx│
@@ -28,10 +28,10 @@ CodeLoom is a code intelligence and migration platform that treats an entire cod
   │                                                              │
   │   AuthContext  ──  session cookie  ──  services/api.ts       │
   └───────────────────────────┬──────────────────────────────────┘
-                              │  Vite dev proxy  /api → :9005
+                              │  Vite dev proxy  /api → :5033
                               │  (production: reverse proxy)
   ┌───────────────────────────▼──────────────────────────────────┐
-  │                 FastAPI + uvicorn  (:9005)                    │
+  │                 FastAPI + uvicorn  (:5033)                    │
   │                                                              │
   │  api/app.py  create_app()                                    │
   │  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────────┐  │
@@ -132,7 +132,7 @@ python -m codeloom
         │      Registers all routers with /api prefix
         │      Adds SessionMiddleware and CORSMiddleware
         │
-        └── 7. uvicorn.run(app, host="0.0.0.0", port=9005)
+        └── 7. uvicorn.run(app, host="0.0.0.0", port=5033)
 ```
 
 ### Dependency Injection

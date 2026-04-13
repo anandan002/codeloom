@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Optional, Set
 
+import httpx
 import requests
 import yaml
 from llama_index.llms.ollama import Ollama
@@ -126,28 +127,34 @@ class LocalRAGModel:
         """
         setting = setting or get_settings()
 
-        # If no model specified, use centralized defaults for provider + model
+        from codeloom.core.defaults import LLM_PROVIDER as _default_provider
+
+        # Track whether the caller or env provided an explicit model name.
+        # setting.ollama.llm is populated from LLM_MODEL itself, so comparing
+        # model_name to it would be circular — we track explicitness separately.
+        _explicit_model = bool(model_name)  # caller passed something
+
         if not model_name:
-            from codeloom.core.defaults import LLM_PROVIDER, LLM_MODEL
+            from codeloom.core.defaults import LLM_MODEL
             if LLM_MODEL:
                 model_name = LLM_MODEL
+                _explicit_model = True  # LLM_MODEL env var is an explicit choice
             else:
-                model_name = setting.ollama.llm
+                model_name = setting.ollama.llm  # pure fallback, no explicit model
 
         # Detect provider: first check centralized default, then infer from model name
-        from codeloom.core.defaults import LLM_PROVIDER as _default_provider
-        if not model_name or model_name == setting.ollama.llm:
-            # No explicit model — use the configured provider
+        if not _explicit_model:
+            # No model from caller or env — pick a sensible default per provider
             provider = _default_provider
-            # Get provider-specific default model if model_name is still generic
-            if provider == "groq" and model_name not in cls._get_groq_models():
+            if provider == "groq":
                 model_name = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-            elif provider == "openai" and model_name not in cls._get_openai_models():
+            elif provider == "openai":
                 model_name = "gpt-4.1"
-            elif provider == "claude" and model_name not in cls._get_claude_models():
+            elif provider == "claude":
                 model_name = "claude-3-5-sonnet-20241022"
-            elif provider == "gemini" and model_name not in cls._get_gemini_models():
+            elif provider == "gemini":
                 model_name = "gemini-1.5-flash"
+            # else: ollama — keep model_name as-is
         elif model_name in cls._get_openai_models():
             provider = "openai"
         elif model_name in cls._get_claude_models():
@@ -157,6 +164,7 @@ class LocalRAGModel:
         elif model_name in cls._get_groq_models():
             provider = "groq"
         else:
+            # Unknown model name — trust LLM_PROVIDER to route it correctly
             provider = _default_provider if _default_provider != "ollama" else "ollama"
 
         # Cache key includes provider and system prompt hash
@@ -168,13 +176,26 @@ class LocalRAGModel:
             logger.debug(f"Using cached LLM model: {model_name}")
             return _llm_cache[cache_key]
 
+        # Strip LiteLLM-style "provider/" prefix before handing to the SDK
+        clean_model_name = model_name.split("/", 1)[-1] if "/" in model_name else model_name
+
         # Create model based on provider
         if provider == "openai":
-            model = OpenAI(
-                model=model_name,
+            _kwargs = dict(
+                model=clean_model_name,
                 temperature=setting.ollama.temperature,
+                # Force IPv4: Azure Windows VMs may attempt IPv6 for api.openai.com
+                # and fail with [WinError 10049] WSAADDRNOTAVAIL.
+                http_client=httpx.Client(
+                    transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+                    timeout=300.0,
+                ),
                 timeout=300.0,
             )
+            _base_url = os.getenv("OPENAI_BASE_URL")
+            if _base_url:
+                _kwargs["api_base"] = _base_url
+            model = OpenAI(**_kwargs)
         elif provider == "claude":
             from llama_index.llms.anthropic import Anthropic
             model = Anthropic(

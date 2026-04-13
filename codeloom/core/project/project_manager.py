@@ -186,16 +186,23 @@ class ProjectManager:
                 if not project:
                     return False
 
-                # Clean up pgvector embeddings for this project
+                # Clean up pgvector embeddings for this project.
+                # Use a savepoint so a missing/non-existent table doesn't abort
+                # the outer transaction (PostgreSQL aborts the whole tx on any error).
+                import os
+                from sqlalchemy import text
+                _tbl = "data_" + os.getenv("PGVECTOR_TABLE_NAME", "embeddings")
                 try:
-                    from sqlalchemy import text
+                    sp = session.begin_nested()
                     session.execute(
-                        text("DELETE FROM data_embeddings WHERE metadata_->>'project_id' = :pid"),
+                        text(f"DELETE FROM {_tbl} WHERE metadata_->>'project_id' = :pid"),
                         {"pid": str(project_id)},
                     )
+                    sp.commit()
                     logger.info(f"Cleaned up embeddings for project {project_id}")
                 except Exception as emb_err:
-                    logger.warning(f"Failed to clean up embeddings for {project_id}: {emb_err}")
+                    sp.rollback()
+                    logger.warning(f"Embeddings cleanup skipped for {project_id}: {emb_err}")
 
                 session.delete(project)
                 logger.info(f"Deleted project: {project_id} ({project.name})")

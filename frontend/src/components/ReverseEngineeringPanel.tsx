@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { apiUrl } from '../services/api.ts';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -169,7 +170,7 @@ export function ReverseEngineeringPanel({ projectId }: Props) {
 
   // ---- API helpers --------------------------------------------------------
 
-  const apiBase = `/api/reverse-engineer/${projectId}`;
+  const apiBase = apiUrl(`/api/reverse-engineer/${projectId}`);
 
   const loadLatestDoc = useCallback(async () => {
     try {

@@ -9,6 +9,12 @@ build/
 venv/
 .venv/
 *.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Environment
 .env
@@ -17,18 +23,27 @@ venv/
 # IDE
 .idea/
 .vscode/
+.vs/
 *.swp
 *.swo
 *~
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Node / Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+playwright-report/
+test-results/
 
 # Database
 *.db
@@ -36,6 +51,7 @@ frontend/.vite/
 
 # Logs
 *.log
+*.err
 logs/
 
 # Uploads

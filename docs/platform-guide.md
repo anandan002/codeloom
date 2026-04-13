@@ -30,10 +30,10 @@ The platform parses source code into semantic units, builds a graph of their rel
 ```
 Browser (React 19, Vite 7)
     |
-    | HTTP/SSE on :3000 (Vite dev proxy)
+    | HTTP/SSE on :5034 (Vite dev proxy)
     |
     v
-FastAPI Backend (:9005)
+FastAPI Backend (:5033)
     |
     +-- api/app.py            App factory, CORS, session middleware
     |
@@ -72,10 +72,10 @@ FastAPI Backend (:9005)
 User query
     |
     v
-React frontend (:3000)
+React frontend (:5034)
     |  POST /api/projects/{id}/chat/stream
     v
-FastAPI (:9005)
+FastAPI (:5033)
     |
     +-- api/deps.py           Extracts pipeline, db_manager from app.state
     |

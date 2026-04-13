@@ -58,7 +58,7 @@ Transform CodeLoom into a **deep reverse-engineering and enrichment engine**. In
 
 ```
 +-------------------------------------------------------------------------+
-|                         React Frontend (:3000)                           |
+|                         React Frontend (:5034)                           |
 |  +-----------+  +--------------+  +---------------+  +--------------+   |
 |  | Code Chat |  | Project View |  | Migration     |  | Understanding|   |
 |  | (Enriched)|  | (ASG Graph)  |  | Wizard        |  | Dashboard    |   |
@@ -67,7 +67,7 @@ Transform CodeLoom into a **deep reverse-engineering and enrichment engine**. In
           |               |                  |                 |
           v               v                  v                 v
 +-------------------------------------------------------------------------+
-|                      FastAPI Backend (:9005)                              |
+|                      FastAPI Backend (:5033)                              |
 |                                                                          |
 |  /api/projects/{id}/query  |  /api/migration  |  /api/understanding      |
 |                            |                  |                          |

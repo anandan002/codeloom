@@ -19,10 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable Apache AGE extension (requires superuser — may already be installed)
-    op.execute("CREATE EXTENSION IF NOT EXISTS age")
+    # Enable Apache AGE extension.
+    # Uses a SAVEPOINT so failure (AGE not installed on this PostgreSQL) does not
+    # abort the transaction — the age_graph_status column is always added regardless.
+    conn = op.get_bind()
+    conn.execute(sa.text("SAVEPOINT age_ext"))
+    try:
+        conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS age"))
+        conn.execute(sa.text("RELEASE SAVEPOINT age_ext"))
+    except Exception:
+        conn.execute(sa.text("ROLLBACK TO SAVEPOINT age_ext"))
+        # AGE not available on this host; graph features will be disabled at runtime.
 
-    # Add graph sync status to projects
+    # Add graph sync status to projects (always runs, AGE or not)
     op.add_column(
         'projects',
         sa.Column('age_graph_status', sa.String(20), server_default='pending'),

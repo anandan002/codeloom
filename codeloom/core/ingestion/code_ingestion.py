@@ -423,9 +423,8 @@ class CodeIngestionService:
                     node.embedding = embedding
 
                 logger.info(f"Embeddings generated, storing {len(all_nodes)} nodes...")
-                self._vector_store.add_nodes(all_nodes, project_id=project_id)
-                result.embeddings_stored = len(all_nodes)
-                logger.info(f"Stored {len(all_nodes)} embeddings for project {project_id}")
+                result.embeddings_stored = self._vector_store.add_nodes(all_nodes, project_id=project_id)
+                logger.info(f"Stored {result.embeddings_stored} embeddings for project {project_id}")
             except Exception as e:
                 logger.error(f"Failed to embed/store: {e}")
                 result.errors.append(f"Embedding failed: {e}")

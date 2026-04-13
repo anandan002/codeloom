@@ -121,4 +121,4 @@
 
 **What happened**: Migrated CardDemo frontend defaulted to port 3000, same as CodeLoom's frontend. API proxy sent requests to CodeLoom's FastAPI backend (port 9005) instead of Spring Boot (port 8080).
 
-**Rule**: When migrating apps that coexist with CodeLoom, use different ports. CodeLoom owns 3000+9005. Migrated apps should use 3001+ and 8080+.
+**Rule**: When migrating apps that coexist with CodeLoom, use different ports. CodeLoom owns 5033+5034. Migrated apps should use other ports (e.g. 5080 for Spring Boot, 5090+ for frontends).

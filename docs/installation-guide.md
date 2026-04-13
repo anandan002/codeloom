@@ -47,6 +47,14 @@ Install on Ubuntu/Debian:
 sudo apt update && sudo apt install python3.11 python3.11-venv python3.11-dev
 ```
 
+Install on Windows:
+
+```
+winget install Python.Python.3.11
+```
+
+Or download the installer from https://www.python.org/downloads/. During installation, check **Add Python to PATH**.
+
 **Node.js 18 or higher**
 
 Required for the React frontend. Check your version:
@@ -71,6 +79,14 @@ Install on Ubuntu/Debian:
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install nodejs
 ```
+
+Install on Windows:
+
+```
+winget install OpenJS.NodeJS
+```
+
+Or download the LTS installer from https://nodejs.org/.
 
 **PostgreSQL 17**
 
@@ -99,6 +115,10 @@ sudo make install
 > On Ubuntu, pgvector packages are also available for recent releases:
 > `sudo apt install postgresql-17-pgvector`
 
+Install on Windows:
+
+WSL2 is the recommended path for Windows (see Section 3). If you need native Windows PostgreSQL, download the EDB installer from https://www.postgresql.org/download/windows/. pgvector on native Windows requires Visual Studio 2022 Build Tools and MSYS2 to compile from source — WSL2 avoids this complexity entirely.
+
 **Git**
 
 ```bash
@@ -108,6 +128,7 @@ git --version
 
 Install on macOS: `brew install git`
 Install on Ubuntu/Debian: `sudo apt install git`
+Install on Windows: `winget install Git.Git` (or https://git-scm.com/download/win)
 
 ### Optional
 
@@ -123,6 +144,8 @@ Install on Ubuntu/Debian: `sudo apt install git`
 
 If you have Python 3.11+, Node.js 18+, and PostgreSQL 17 installed, these commands get CodeLoom running in under five minutes.
 
+> **Windows users**: `dev.sh` is a Bash script. Run it inside **WSL2** (recommended) or **Git Bash**. With WSL2, install all prerequisites inside the WSL2 Ubuntu environment and follow the Linux database setup in Section 3. With Git Bash, PostgreSQL must be installed natively on Windows.
+
 ```bash
 # 1. Clone the repository
 git clone <repo-url> codeloom
@@ -130,7 +153,9 @@ cd codeloom
 
 # 2. Create and activate a Python virtual environment
 python3 -m venv venv
-source venv/bin/activate         # On Windows: venv\Scripts\activate
+source venv/bin/activate         # macOS / Linux / WSL2
+# Windows cmd.exe:  venv\Scripts\activate.bat
+# Windows PowerShell: venv\Scripts\Activate.ps1
 
 # 3. Install Python dependencies
 pip install -r requirements.txt
@@ -146,12 +171,20 @@ cp .env.example .env
 ./dev.sh local
 ```
 
-After `./dev.sh local` succeeds, open http://localhost:3000 and log in with:
+Windows PowerShell (native alternative):
+
+```powershell
+.\dev.ps1 local
+```
+
+After `./dev.sh local` succeeds, open http://localhost:5034 and log in with:
 
 - Username: `admin`
 - Password: `admin123`
 
-The backend API is available at http://localhost:9005 and its interactive documentation at http://localhost:9005/docs.
+The backend API is available at http://localhost:5033 and its interactive documentation at http://localhost:5033/docs.
+
+> Temporary compatibility note: on Linux/macOS, `dev.sh` currently starts backend on `9005` and frontend on `3000`. Until `dev.sh` is aligned, translate examples as `5033 -> 9005` and `5034 -> 3000` when you use `dev.sh`.
 
 ---
 
@@ -206,6 +239,51 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE codeloom_dev TO codel
 Update your `.env` to match these credentials:
 
 ```
+DATABASE_URL=postgresql://codeloom:codeloom@localhost:5432/codeloom_dev
+```
+
+### Windows
+
+**Option A — WSL2 (recommended)**
+
+WSL2 gives you a full Ubuntu environment inside Windows. This is the easiest path because `dev.sh`, pgvector compilation, and PostgreSQL all work identically to Linux.
+
+```
+# Install WSL2 with Ubuntu (run in PowerShell as Administrator)
+wsl --install
+# Restart, then open the Ubuntu terminal that appears
+```
+
+Inside the WSL2 Ubuntu terminal, follow the **Ubuntu / Debian** steps above exactly. When PostgreSQL is running inside WSL2, `DATABASE_URL` uses `localhost`:
+
+```bash
+DATABASE_URL=postgresql://codeloom:codeloom@localhost:5432/codeloom_dev
+```
+
+All `./dev.sh` commands work normally inside the WSL2 terminal.
+
+**Option B — Native Windows PostgreSQL**
+
+If you prefer not to use WSL2:
+
+1. Download the EDB installer from https://www.postgresql.org/download/windows/ and install PostgreSQL 17. Note the port (5432 default) and the password you set for the `postgres` superuser.
+
+2. Add the PostgreSQL `bin` directory to your system PATH:
+   `C:\Program Files\PostgreSQL\17\bin`
+
+3. Open a Command Prompt and create the database user and database:
+
+```cmd
+psql -U postgres -c "CREATE USER codeloom WITH PASSWORD 'codeloom';"
+psql -U postgres -c "CREATE DATABASE codeloom_dev OWNER codeloom;"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE codeloom_dev TO codeloom;"
+```
+
+4. pgvector must be compiled from source on Windows. This requires Visual Studio 2022 Build Tools with the "C++ build tools" workload and MSYS2. If this is complex, use WSL2 instead (Option A).
+
+5. Update `.env`:
+
+```bash
 DATABASE_URL=postgresql://codeloom:codeloom@localhost:5432/codeloom_dev
 ```
 
@@ -380,11 +458,11 @@ RETRIEVAL_STRATEGY=hybrid
 
 ## 5. Frontend Setup
 
-The frontend is a React 19 + TypeScript + Vite application. It runs on port 3000 and proxies all `/api` requests to the backend at port 9005.
+The frontend is a React 19 + TypeScript + Vite application. It runs on port 5034 and proxies all `/api` requests to the backend at port 5033.
 
 ### Development Mode
 
-`./dev.sh local` starts the frontend automatically alongside the backend. To run it in a separate terminal:
+`./dev.sh local` starts the frontend automatically alongside the backend. `.\dev.ps1 local` does the same on Windows PowerShell. To run the frontend separately:
 
 ```bash
 cd frontend
@@ -392,14 +470,14 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The Vite dev server proxies the following paths to the backend:
+Open http://localhost:5034. The Vite dev server proxies the following paths to the backend:
 
 | Path prefix | Backend target |
 |---|---|
-| `/api` | http://localhost:9005 |
-| `/chat` | http://localhost:9005 |
-| `/upload` | http://localhost:9005 |
-| `/image` | http://localhost:9005 |
+| `/api` | http://localhost:5033 |
+| `/chat` | http://localhost:5033 |
+| `/upload` | http://localhost:5033 |
+| `/image` | http://localhost:5033 |
 
 ### Production Build
 
@@ -499,6 +577,14 @@ Install on Ubuntu/Debian:
 sudo apt install dotnet-sdk-8.0
 ```
 
+Install on Windows:
+
+```
+winget install Microsoft.DotNet.SDK.8
+```
+
+Or download from https://dotnet.microsoft.com/download/dotnet/8.0.
+
 ### Build
 
 ```bash
@@ -580,51 +666,41 @@ java -jar tools/plantuml/plantuml.jar -version
 
 ## 9. Docker Deployment
 
-Docker deployment packages the backend and frontend into a single container and connects to a PostgreSQL instance running on the host machine.
+> **Status**: The `Dockerfile` and `docker-compose.yml` are not yet committed to this repository. The `./dev.sh docker` command and the `.env` guidance below describe the intended setup. Until these files are added, containerized deployment is not available. Use `./dev.sh local` for development.
 
-### Prerequisites
+### Intended Architecture
 
-- Docker Desktop installed and running
-- PostgreSQL running on the host (same requirement as local mode)
-- `.env` file configured (see Section 4)
+When Docker support is added, it will package the backend and frontend into a single container and connect to a PostgreSQL instance running on the host machine.
 
-### Start
-
-```bash
-./dev.sh docker
-```
-
-This runs `docker compose up --build -d` and starts CodeLoom on port 7007. After a 10-second startup wait, the script checks the health endpoint and prints the URL.
-
-Access the application at http://localhost:7007.
+- Container port: **7007** → `http://localhost:7007`
+- Backend port inside container: 5033
+- Database: PostgreSQL on the host, reached via `host.docker.internal`
 
 ### Database Connectivity in Docker
 
-The Docker container uses `host.docker.internal` to reach the host's PostgreSQL instance. Set these values in your `.env` for Docker mode:
+Docker containers cannot reach `localhost` on the host — `localhost` inside the container refers to the container itself. Instead, use `host.docker.internal`, which Docker Desktop resolves to the host machine on macOS, Linux, and Windows.
+
+Configure `.env` for Docker mode:
 
 ```bash
 POSTGRES_HOST=host.docker.internal
 DATABASE_URL=postgresql://codeloom:codeloom@host.docker.internal:5432/codeloom_dev
 ```
 
-When switching between `./dev.sh local` and `./dev.sh docker`, the `local` mode automatically rewrites `host.docker.internal` back to `localhost` in the loaded environment, so a single `.env` file works for both modes.
+When you run `./dev.sh local` instead of `./dev.sh docker`, the script automatically substitutes `host.docker.internal` with `localhost` in the loaded environment. This means a single `.env` file works for both local and Docker modes without manual editing.
 
-### Docker Commands
+> **Windows**: `host.docker.internal` works on Windows Docker Desktop running Linux containers — no additional configuration is needed compared to macOS or Linux.
+
+### Planned Docker Commands
+
+Once the Docker config files are in the repository:
 
 ```bash
-./dev.sh docker     # Build and start container on port 7007
-./dev.sh stop       # Stop the container
-./dev.sh logs       # Follow container logs (docker logs -f codeloom)
+./dev.sh docker     # Build image and start container on port 7007
+./dev.sh stop       # Stop the container (and any running local services)
+./dev.sh logs       # Follow container logs: docker logs -f codeloom
 ./dev.sh status     # Show status of all services including Docker
 ```
-
-### Stopping Services
-
-```bash
-./dev.sh stop
-```
-
-This stops the backend on port 9005, the frontend dev server on port 3000, and the Docker container if running.
 
 ---
 
@@ -635,14 +711,14 @@ Follow these steps in order after installation to confirm everything is working.
 **Step 1: Health endpoint**
 
 ```bash
-curl http://localhost:9005/api/health
+curl http://localhost:5033/api/health
 ```
 
 Expected response: `{"status": "ok"}` or similar. A non-200 response means the backend did not start correctly — check terminal output for errors.
 
 **Step 2: Frontend loads**
 
-Open http://localhost:3000 in a browser. You should see the CodeLoom login page.
+Open http://localhost:5034 in a browser. You should see the CodeLoom login page.
 
 **Step 3: Login**
 
@@ -680,10 +756,10 @@ Return to the project view. The ASG (Abstract Semantic Graph) panel shows relati
 | `could not load library "vector.so"` or pgvector extension not found | pgvector is not installed in PostgreSQL | Install pgvector: `sudo apt install postgresql-17-pgvector` on Ubuntu, or build from source. Then re-run `alembic upgrade head`. |
 | `EMBEDDING_MODEL dimension mismatch` or `expected 1536, got 768` during ingestion | `PGVECTOR_EMBED_DIM` in `.env` does not match the actual embedding model output dimension | Update `PGVECTOR_EMBED_DIM` to match your model (1536 for OpenAI `text-embedding-3-small`, 768 for `nomic-embed-text`). If you changed models after ingesting data, delete all projects and re-ingest. |
 | `OMP_NUM_THREADS` or `TOKENIZERS_PARALLELISM` warnings at startup | Normal startup behavior | These environment variables are set intentionally at startup to prevent segfaults in torch and onnxruntime under multi-threaded FastAPI. The warnings are informational and do not indicate a problem. |
-| `address already in use: 0.0.0.0:9005` | Another instance of the backend is running | Run `./dev.sh stop` to kill all running services, then restart with `./dev.sh local`. |
+| `address already in use: 0.0.0.0:5033` | Another instance of the backend is running | Run `./dev.sh stop` to kill all running services, then restart with `./dev.sh local`. |
 | `tree_sitter` build errors during `pip install -r requirements.txt` | Missing C compiler | On macOS: `xcode-select --install`. On Ubuntu/Debian: `sudo apt install build-essential`. Then re-run `pip install -r requirements.txt`. |
 | RAPTOR worker does not start or background tasks are skipped | `DISABLE_BACKGROUND_WORKERS=true` is set | Remove or unset `DISABLE_BACKGROUND_WORKERS` from your `.env`. This variable is used in Gunicorn multi-worker deployments to prevent multiple workers from competing on the asyncio event loop. In local single-worker mode it should not be set. |
-| Frontend shows "Network Error" or API calls fail with CORS or 404 errors | Vite proxy is not forwarding requests correctly | Check `frontend/vite.config.ts`. The proxy target must be `http://localhost:9005`. Confirm the backend is running on that port with `curl http://localhost:9005/api/health`. |
+| Frontend shows "Network Error" or API calls fail with CORS or 404 errors | Vite proxy is not forwarding requests correctly | Check `frontend/vite.config.ts`. The proxy target must be `http://localhost:5033`. Confirm the backend is running on that port with `curl http://localhost:5033/api/health`. |
 | `createdb: error: role "username" does not exist` | Your system user does not have a PostgreSQL role | Run `psql postgres -c "CREATE ROLE $(whoami) SUPERUSER LOGIN;"` and then retry `createdb codeloom_dev`. |
 | `ModuleNotFoundError` after activating venv | Dependencies not installed or wrong virtual environment | Ensure you are in the project root and have activated the venv: `source venv/bin/activate`. Then run `pip install -r requirements.txt`. |
 | Ollama connection refused at startup | Ollama is not running | Start Ollama: `ollama serve`. Confirm it is listening: `curl http://localhost:11434/`. Pull your model if needed: `ollama pull llama3.1`. |
@@ -691,12 +767,17 @@ Return to the project view. The ASG (Abstract Semantic Graph) panel shows relati
 | `dotnet: command not found` when running setup-tools | .NET SDK is not installed | Install .NET 8 SDK from https://dotnet.microsoft.com/download or via `brew install dotnet@8` on macOS. |
 | PlantUML diagram generation produces blank output | Java not on PATH or JAR not downloaded | Run `./dev.sh setup-tools` to download the JAR. Confirm Java is available: `java --version`. |
 | Sessions expire immediately or login redirects loop | `FLASK_SECRET_KEY` is not set or changes between restarts | Set a stable, random value for `FLASK_SECRET_KEY` in `.env`. Generate one with: `python3 -c "import secrets; print(secrets.token_hex(32))"`. |
+| `./dev.sh: command not found` or `bash: ./dev.sh: Permission denied` on Windows | `dev.sh` requires Bash; Windows cmd.exe and PowerShell cannot run it | Use WSL2 (recommended): `wsl --install` in PowerShell as Administrator, then run all commands inside the WSL2 Ubuntu terminal. Alternatively, install Git for Windows and use Git Bash. |
+| `pg_isready: command not found` on Windows | PostgreSQL `bin` directory is not on PATH | Add `C:\Program Files\PostgreSQL\17\bin` to the system PATH via System Properties → Environment Variables → Path. |
+| `venv\Scripts\Activate.ps1 cannot be loaded because running scripts is disabled` | PowerShell script execution policy blocks activation | Run once in PowerShell: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`. Then retry activation. |
+| `tree_sitter` or `onnxruntime` build errors during `pip install` on Windows | Missing C/C++ compiler | Install Visual Studio 2022 Build Tools with the "Desktop development with C++" workload from https://visualstudio.microsoft.com/downloads/. Then re-run `pip install -r requirements.txt`. WSL2 avoids this entirely. |
+| `RuntimeError: Event loop is closed` or asyncio errors on Windows | Windows `ProactorEventLoop` incompatibility with some async libraries | This is patched automatically via `nest_asyncio.apply()` at startup. If the error persists, confirm `nest_asyncio` is installed: `pip show nest_asyncio`. |
 
 ---
 
 ## Additional Resources
 
-- **API documentation**: http://localhost:9005/docs (Swagger UI, available when backend is running)
+- **API documentation**: http://localhost:5033/docs (Swagger UI, available when backend is running)
 - **Architecture overview**: `docs/architecture.md`
 - **Project CLAUDE.md**: `CLAUDE.md` — development conventions, component map, and gotchas for contributors
 - **Alembic migrations**: `alembic/versions/` — schema change history

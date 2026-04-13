@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiUrl } from '../services/api.ts';
 import {
   Loader2,
   Gauge,
@@ -91,7 +92,7 @@ export function ComplexityPanel({ projectId }: Props) {
     setIsLoading(true);
     setError(null);
 
-    fetch(`/api/projects/${projectId}/graph/complexity?sort=desc&limit=100`, {
+    fetch(apiUrl(`/api/projects/${projectId}/graph/complexity?sort=desc&limit=100`), {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     })

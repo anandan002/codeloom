@@ -18,14 +18,15 @@ brew services start postgresql@17
 createdb codeloom_dev
 
 # Copy .env.example to .env, then:
-./dev.sh local          # Starts backend (:9005) + frontend (:3000)
+./dev.sh local          # Canonical docs baseline: backend (:5033) + frontend (:5034)
 ./dev.sh stop           # Stop all services
 ./dev.sh status         # Check service status
 ./dev.sh build          # Build frontend + sync deps + run migrations
 ./dev.sh setup-tools    # Build optional enrichment tools (JavaParser, Roslyn, PlantUML JAR)
+./dev.sh docker         # Build Docker image and run on :7007
 
 # Frontend (separate terminal)
-cd frontend && npm install && npm run dev    # :3000, proxies /api to :9005
+cd frontend && npm install && npm run dev    # :5034, proxies /api to :5033
 npm run build           # Production build
 npm run lint            # ESLint
 
@@ -40,6 +41,16 @@ pytest codeloom/tests/              # All tests in directory
 pytest codeloom/tests/test_ast_parser.py          # Single test file
 pytest codeloom/tests/test_understanding/         # Understanding engine tests
 ```
+
+```powershell
+# Windows PowerShell (native)
+.\dev.ps1 local         # Backend :5033 + Frontend :5034
+.\dev.ps1 stop
+.\dev.ps1 status
+.\dev.ps1 build
+```
+
+> Temporary compatibility note: `dev.sh` currently starts backend `:9005` and frontend `:3000` on Linux/macOS. When using `dev.sh`, map docs ports as `5033 -> 9005` and `5034 -> 3000` until `dev.sh` is aligned.
 
 **Default login**: admin / admin123
 
@@ -61,12 +72,12 @@ pytest codeloom/tests/test_understanding/         # Understanding engine tests
 2. Creates `DatabaseManager`, `ProjectManager`, `CodeIngestionService`, `ConversationStore`
 3. Calls `create_app()` in `codeloom/api/app.py` to build the FastAPI application
 4. Injects all services onto `app.state` for dependency injection
-5. Runs uvicorn on port 9005
+5. Runs uvicorn on port 5033
 
 ### Request Flow
 
 ```
-React Frontend (:3000) --proxy /api--> FastAPI (:9005) --> Pipeline/Services
+React Frontend (:5034) --proxy /api--> FastAPI (:5033) --> Pipeline/Services
                                           |
                                      api/deps.py (FastAPI Depends())
                                      extracts services from app.state
@@ -218,7 +229,7 @@ Core tables in `core/db/models.py`: `users`, `projects`, `code_files`, `code_uni
 All routes prefixed with `/api`:
 - **Auth**: `/api/auth/*` -- login, logout, session check
 - **Projects**: `/api/projects/*` -- CRUD, zip upload with ingestion, file/unit browsing
-- **Code Chat**: `/api/projects/{id}/query/stream` -- SSE streaming RAG chat
+- **Code Chat**: `/api/projects/{id}/chat/stream` -- SSE streaming RAG chat
 - **Settings**: `/api/settings/*` -- runtime configuration
 - **Analytics**: `/api/projects/{id}/analytics` -- aggregated project metrics (code breakdown, migration progress, LLM usage, coverage)
 - **Graph**: `/api/projects/{id}/graph/*` -- ASG queries (callers, callees, dependencies)
@@ -239,6 +250,7 @@ The ASG builder (`core/asg_builder/builder.py`) detects these relationship types
 | `inherits` | Class extends another class | `extends` metadata or signature regex |
 | `implements` | Class/struct implements interface | `implements` metadata from parser |
 | `overrides` | Method overrides parent class method | `@Override` / `override` modifier |
+| `calls_sp` | App code invokes stored procedure | SP invocation patterns (prepareCall, EXEC, CALL) |
 | `type_dep` | Consumer depends on referenced type | Structured metadata: field types, param types, return types |
 
 **Enrichment layers**: (1) tree-sitter enricher (`enricher.py`) runs on all files, adding `parsed_params`, `return_type`, `modifiers`, and `fields` (class field declarations) to metadata. (2) Optional bridges (`bridges/`) provide deeper type resolution when Java/dotnet runtimes are available. Build with `./dev.sh setup-tools`.
@@ -277,8 +289,8 @@ CHAT_TOKEN_LIMIT=...             # Override chat token limit
 
 ## Key Defaults
 
-- Backend: http://localhost:9005
-- Frontend dev: http://localhost:3000 (Vite proxies `/api` to :9005)
+- Backend: http://localhost:5033
+- Frontend dev: http://localhost:5034 (Vite proxies `/api` to :5033)
 - PostgreSQL: localhost:5432 (database: `codeloom_dev`)
 - Embedding dimension: 1536 (OpenAI text-embedding-3-small)
 - Reranker: `mixedbread-ai/mxbai-rerank-base-v1`

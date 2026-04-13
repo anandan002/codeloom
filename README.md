@@ -29,9 +29,9 @@ Code intelligence and migration platform powered by AST + ASG + RAG. Upload enti
 ```
 Browser (React 19, Vite 7, Tailwind CSS 4)
     |
-    | HTTP/SSE on :3000 (Vite dev proxy)
+    | HTTP/SSE on :5034 (Vite dev proxy)
     v
-FastAPI Backend (:9005)
+FastAPI Backend (:5033)
     |
     +-- api/routes/
     |       fastapi_auth.py   Login, logout, session check
@@ -111,10 +111,18 @@ cp .env.example .env
 alembic upgrade head
 
 # 5. Start
-./dev.sh local    # Backend :9005 + Frontend :3000
+./dev.sh local    # Canonical docs baseline: Backend :5033 + Frontend :5034
 ```
 
-Open http://localhost:3000. Login with `admin` / `admin123`.
+Open http://localhost:5034. Login with `admin` / `admin123`.
+
+Windows PowerShell (native) startup:
+
+```powershell
+.\dev.ps1 local   # Backend :5033 + Frontend :5034
+```
+
+> Temporary compatibility note: `dev.sh` currently starts `9005/3000` on Linux/macOS. Until `dev.sh` is aligned, map docs endpoints as `5033 -> 9005` and `5034 -> 3000` when using `dev.sh`.
 
 ### Database Setup
 
@@ -195,7 +203,7 @@ RETRIEVAL_STRATEGY=hybrid
 ```bash
 cd frontend
 npm install
-npm run dev     # :3000, proxies /api to :9005
+npm run dev     # :5034, proxies /api to :5033
 ```
 
 ### Docker Deployment
@@ -212,15 +220,15 @@ After setup, verify everything works:
 
 ```bash
 # 1. Health check
-curl http://localhost:9005/api/health
+curl http://localhost:5033/api/health
 
 # 2. Login
-curl -X POST http://localhost:9005/api/auth/login \
+curl -X POST http://localhost:5033/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
 # 3. Open the UI
-open http://localhost:3000
+open http://localhost:5034
 ```
 
 For the complete installation guide with troubleshooting, see [docs/installation-guide.md](docs/installation-guide.md).
@@ -397,7 +405,7 @@ All routes prefixed with `/api`:
 ## Development
 
 ```bash
-./dev.sh local          # Start backend (:9005) + frontend (:3000)
+./dev.sh local          # Docs baseline: backend (:5033) + frontend (:5034)
 ./dev.sh stop           # Stop all services
 ./dev.sh status         # Check service status
 ./dev.sh setup-tools    # Build optional enrichment tools
@@ -412,6 +420,15 @@ npm run build           # Production build
 
 # Tests
 pytest -v -x
+```
+
+Windows PowerShell equivalent:
+
+```powershell
+.\dev.ps1 local
+.\dev.ps1 stop
+.\dev.ps1 status
+.\dev.ps1 build
 ```
 
 ## License

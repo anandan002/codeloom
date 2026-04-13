@@ -9,6 +9,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { apiUrl } from '../services/api.ts';
 import type { FormEvent, KeyboardEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -606,7 +607,7 @@ function FileViewerModal({
     setLoading(true);
     setFetchError(null);
 
-    fetch(`/api/projects/${data.projectId}/file/${data.filePath}`, {
+    fetch(apiUrl(`/api/projects/${data.projectId}/file/${data.filePath}`), {
       credentials: 'include',
     })
       .then(async (res) => {

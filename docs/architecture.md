@@ -26,7 +26,7 @@ parsers) -- 12 languages/file types total.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                      React Frontend (:3000)                           │
+│                      React Frontend (:5034)                           │
 │  ┌───────────┐ ┌──────────┐ ┌────────────────┐ ┌────────────────┐   │
 │  │ Code Chat │ │ Project  │ │   Migration    │ │  Project Wiki  │   │
 │  │ (RAG)     │ │ View +   │ │   Wizard +     │ │  & Analytics   │   │
@@ -36,7 +36,7 @@ parsers) -- 12 languages/file types total.
          │            │               │                   │
          ▼            ▼               ▼                   ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                       FastAPI (:9005)                                  │
+│                       FastAPI (:5033)                                  │
 │  /api/projects  /api/.../query  /api/migration  /api/understanding   │
 │  /api/auth      /api/graph      /api/settings   /api/.../analytics   │
 └──────┬──────────────┬───────────────┬───────────────────┬────────────┘

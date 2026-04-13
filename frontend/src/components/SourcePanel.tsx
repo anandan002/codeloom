@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { apiUrl } from '../services/api.ts';
 import { FileCode2, Copy, Check, ChevronRight, ExternalLink, X, Loader2 } from 'lucide-react';
 import { Highlight, themes } from 'prism-react-renderer';
 import type { ChatSource } from '../types/index.ts';
@@ -325,7 +326,7 @@ function FileViewerModal({
     setLoading(true);
     setFetchError(null);
 
-    fetch(`/api/projects/${projectId}/file/${data.filePath}`, {
+    fetch(apiUrl(`/api/projects/${projectId}/file/${data.filePath}`), {
       credentials: 'include',
     })
       .then(async (res) => {

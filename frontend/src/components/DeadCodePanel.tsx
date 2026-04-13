@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { apiUrl } from '../services/api.ts';
 import {
   Loader2,
   Skull,
@@ -58,7 +59,7 @@ export function DeadCodePanel({ projectId }: Props) {
     setIsLoading(true);
     setError(null);
 
-    fetch(`/api/projects/${projectId}/graph/dead-code?limit=200`, {
+    fetch(apiUrl(`/api/projects/${projectId}/graph/dead-code?limit=200`), {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     })

@@ -56,7 +56,7 @@ def _load_yaml_file(filename: str) -> Dict[str, Any]:
         return {}
 
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
             logger.debug(f"Loaded config from {config_path}")
             return data or {}

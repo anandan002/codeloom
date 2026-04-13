@@ -3,6 +3,7 @@ import logging
 from functools import lru_cache
 from typing import Optional
 
+import httpx
 import requests
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -55,7 +56,13 @@ class LocalEmbedding:
                 logger.warning(
                     "OPENAI_API_KEY not set. OpenAI embeddings may fail."
                 )
-            model = OpenAIEmbedding(model=model_name)
+            # Force IPv4: Azure Windows VMs may attempt IPv6 for api.openai.com
+            # and fail with [WinError 10049] WSAADDRNOTAVAIL.
+            _http_client = httpx.Client(
+                transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+                timeout=300.0,
+            )
+            model = OpenAIEmbedding(model=model_name, http_client=_http_client)
         else:
             cache_folder = os.path.join(
                 os.getcwd(),

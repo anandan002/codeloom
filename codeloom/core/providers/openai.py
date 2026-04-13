@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Generator, Dict, Any, Optional
 
+import httpx
 from llama_index.llms.openai import OpenAI
 
 from ..interfaces import LLMProvider
@@ -76,7 +77,9 @@ class OpenAILLMProvider(LLMProvider):
         self._setting = setting or get_settings()
 
         # Model resolution: explicit arg > env var > provider-specific default
-        self._model = model or os.getenv("LLM_MODEL") or self.DEFAULT_MODEL
+        _raw_model = model or os.getenv("LLM_MODEL") or self.DEFAULT_MODEL
+        # Strip LiteLLM-style "provider/" prefix (e.g. "openai/gpt-4o" → "gpt-4o")
+        self._model = _raw_model.split("/", 1)[-1] if "/" in _raw_model else _raw_model
         self._api_key = api_key or os.getenv("OPENAI_API_KEY")
         self._temperature = temperature
         self._max_tokens = max_tokens
@@ -92,13 +95,27 @@ class OpenAILLMProvider(LLMProvider):
         # Get context window for this model (critical for LlamaIndex token management)
         context_window = self.CONTEXT_WINDOWS.get(self._model, 128000)
 
+        # Force IPv4: on Azure Windows VMs httpx may pick an IPv6 source address
+        # for api.openai.com which fails with [WinError 10049] WSAADDRNOTAVAIL.
+        # Binding local_address="0.0.0.0" constrains the socket to IPv4.
+        _http_client = httpx.Client(
+            transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+            timeout=300.0,
+        )
+
         kwargs = {
             "model": self._model,
             "api_key": self._api_key,
             "temperature": self._temperature,
             "context_window": context_window,
             "timeout": 300.0,  # 5 min — large analysis prompts need time
+            "http_client": _http_client,
         }
+
+        # Support custom base URL (Azure OpenAI, local vLLM/Ollama-compat, etc.)
+        _base_url = os.getenv("OPENAI_BASE_URL")
+        if _base_url:
+            kwargs["api_base"] = _base_url
 
         if self._max_tokens:
             kwargs["max_tokens"] = self._max_tokens

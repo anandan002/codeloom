@@ -3,8 +3,17 @@
  *
  * Single point of contact for all backend communication.
  * Uses cookie-based sessions (credentials: 'include').
- * All paths are relative -- Vite proxies /api to FastAPI on :9005.
+ * All paths are relative -- Vite proxies /api to FastAPI on :5033.
+ *
+ * When built with VITE_BASE_PATH=/codeloom/, import.meta.env.BASE_URL is
+ * '/codeloom/' and apiUrl() prefixes every path so nginx can proxy correctly.
  */
+
+// Strip trailing slash: '/codeloom/' → '/codeloom', '/' → ''
+const _BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+/** Prepend the app base path so API calls work under any nginx subpath. */
+export const apiUrl = (path: string): string => _BASE + path;
 
 import type {
   User,
@@ -39,7 +48,7 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
@@ -136,7 +145,7 @@ export async function uploadCodebase(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`/api/projects/${projectId}/upload`, {
+  const response = await fetch(apiUrl(`/api/projects/${projectId}/upload`), {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -183,7 +192,7 @@ export async function uploadDocument(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`/api/projects/${projectId}/upload-document`, {
+  const response = await fetch(apiUrl(`/api/projects/${projectId}/upload-document`), {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -595,7 +604,7 @@ export async function executeMigrationPhaseAgentic(
   const qs = params.toString() ? `?${params.toString()}` : '';
 
   const response = await fetch(
-    `/api/migration/${planId}/phase/${phaseNumber}/execute-agent${qs}`,
+    apiUrl(`/api/migration/${planId}/phase/${phaseNumber}/execute-agent${qs}`),
     {
       method: 'POST',
       credentials: 'include',
@@ -868,7 +877,7 @@ export async function getAccuracyReport(planId: string): Promise<AccuracyReportD
 }
 
 export async function getAccuracyReportMarkdown(planId: string): Promise<string> {
-  const resp = await fetch(`/api/migration/${planId}/accuracy/report`, { credentials: 'include' });
+  const resp = await fetch(apiUrl(`/api/migration/${planId}/accuracy/report`), { credentials: 'include' });
   if (!resp.ok) throw new ApiError(resp.status, resp.statusText);
   return resp.text();
 }

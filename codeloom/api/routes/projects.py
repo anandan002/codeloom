@@ -18,6 +18,7 @@ from ..deps import (
     get_code_ingestion,
     get_db_manager,
     get_understanding_engine,
+    get_pipeline,
 )
 
 logger = logging.getLogger(__name__)
@@ -235,6 +236,7 @@ async def upload_codebase(
     pm=Depends(get_project_manager),
     ingestion=Depends(get_code_ingestion),
     understanding_engine=Depends(get_understanding_engine),
+    pipeline=Depends(get_pipeline),
 ):
     """Upload a zip file and ingest the codebase.
 
@@ -283,6 +285,10 @@ async def upload_codebase(
             project_id=project_id,
             user_id=user["user_id"],
         )
+
+        # Invalidate node cache so chat picks up the new embeddings immediately
+        if result.embeddings_stored > 0 and pipeline:
+            pipeline.invalidate_node_cache(project_id)
 
         # Auto-trigger deep understanding analysis after successful ingestion
         if result.files_processed > 0:

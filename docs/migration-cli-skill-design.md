@@ -686,7 +686,7 @@ Benefits:
 
 Before building, decisions needed:
 
-1. **CodeLoom Server Requirement**: Should the skill require a running CodeLoom instance (localhost:9005), or should it work with direct DB access? Direct DB access would be more powerful but more complex.
+1. **CodeLoom Server Requirement**: Should the skill require a running CodeLoom instance (localhost:5033), or should it work with direct DB access? Direct DB access would be more powerful but more complex.
 
 2. **File Output Strategy**: Write directly to a `--output` directory, or integrate with the existing `_write_phase_to_disk` mechanism in the engine? Direct write is simpler and more transparent.
 

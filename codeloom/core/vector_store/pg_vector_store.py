@@ -84,7 +84,7 @@ class PGVectorStore(IVectorStore):
                 else:
                     # Fallback: build from individual env vars
                     db_host = os.getenv("POSTGRES_HOST", "localhost")
-                    db_port = int(os.getenv("POSTGRES_PORT", "5433"))
+                    db_port = int(os.getenv("POSTGRES_PORT", "5432"))
                     db_name = os.getenv("POSTGRES_DB", "codeloom_dev")
                     db_user = os.getenv("POSTGRES_USER", "postgres")
                     db_password = os.getenv("POSTGRES_PASSWORD", "root")
@@ -115,7 +115,7 @@ class PGVectorStore(IVectorStore):
                 else:
                     # Fallback: use individual environment variables
                     self._db_host = os.getenv("POSTGRES_HOST", "localhost")
-                    self._db_port = int(os.getenv("POSTGRES_PORT", "5433"))
+                    self._db_port = int(os.getenv("POSTGRES_PORT", "5432"))
                     self._db_name = os.getenv("POSTGRES_DB", "codeloom_dev")
                     self._db_user = os.getenv("POSTGRES_USER", "postgres")
                     self._db_password = os.getenv("POSTGRES_PASSWORD", "root")
@@ -232,6 +232,18 @@ class PGVectorStore(IVectorStore):
 
     def _create_vector_store(self) -> LlamaPGVectorStore:
         """Create LlamaIndex PGVectorStore instance."""
+        # Ensure pgvector extension is installed before LlamaIndex tries to create
+        # the data_embeddings table — the `vector` column type requires it.
+        try:
+            engine = create_engine(self._connection_string)
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                conn.commit()
+            engine.dispose()
+            logger.info("pgvector extension enabled")
+        except Exception as e:
+            logger.warning(f"Could not enable pgvector extension (may need superuser): {e}")
+
         return LlamaPGVectorStore.from_params(
             database=self._db_name,
             host=self._db_host,
